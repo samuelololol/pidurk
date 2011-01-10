@@ -1,0 +1,11 @@
+brief readme,
+
+1. cp all file to
+   pidgin-2.7.2/libpurple/protocols/null/
+
+2. run ./go.sh
+
+3. run finch or pidgin
+
+4. unload, run ./clean.sh
+
