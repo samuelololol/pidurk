@@ -1,4 +1,5 @@
 all:
-	gcc -ggdb  -lssl -loauth -o test test.c 
+	gcc -ggdb  -lssl -loauth -lcurl -o test.out test.c 
+	rm -rf test.out.dSYM
 clean:
-	rm test
+	rm test.out

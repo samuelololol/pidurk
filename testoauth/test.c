@@ -2,13 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <oauth.h>
+
+#define ENABLE_POST 0
+#define ENABLE_GET 1
 /*
  * a example requesting and parsing a request-token from an OAuth service-provider
  * excercising the oauth-HTTP GET function. - it is almost the same as
  * \ref request_token_example_post below.
  */
 void request_token_example_get(void) {
-#if 0
+#if ENABLE_GET
     const char *request_token_uri = "http://oauth-sandbox.mediamatic.nl/module/OAuth/request_token";
     const char *req_c_key = "17b09ea4c9a4121145936f0d7d8daa28047583796"; //< consumer key
     const char *req_c_secret = "942295b08ffce77b399419ee96ac65be"; //< consumer secret
@@ -53,7 +56,7 @@ void request_token_example_get(void) {
  * using the oauth-HTTP POST function.
  */
 void request_token_example_post(void) {
-#if 0
+#if ENABLE_POST
     const char *request_token_uri = "http://oauth-sandbox.mediamatic.nl/module/OAuth/request_token";
     const char *req_c_key = "17b09ea4c9a4121145936f0d7d8daa28047583796"; //< consumer key
     const char *req_c_secret = "942295b08ffce77b399419ee96ac65be"; //< consumer secret
@@ -115,7 +118,8 @@ int main (int argc, char **argv) {
     //< token key
     const char *t_secret = "66666666666666666666666666666666";
     //< token secret
-#if 1 // example sign GET request and print the signed request URL
+#if ENABLE_GET
+// example sign GET request and print the signed request URL
     {
         char *geturl = NULL;
         geturl = oauth_sign_url2(url, NULL, OA_HMAC, NULL, c_key, c_secret, t_key, t_secret);
@@ -123,7 +127,7 @@ int main (int argc, char **argv) {
         if(geturl) free(geturl);
     }
 #endif
-#if 1 // sign POST ;) example
+#if ENABLE_POST // sign POST ;) example
     {
         char *postargs = NULL, *post = NULL;
         post = oauth_sign_url2(url, &postargs, OA_HMAC, NULL, c_key, c_secret, t_key, t_secret);
@@ -136,10 +140,10 @@ int main (int argc, char **argv) {
     // These two will perform a HTTP request, requesting an access token.
     // it's intended both as test (verify signature)
     // and example code.
-#if 1 // POST a request-token request
+#if ENABLE_POST // POST a request-token request
     request_token_example_post();
 #endif
-#if 1 // GET a request-token
+#if ENABLE_GET // GET a request-token
     request_token_example_get();
 #endif
     return (fail?1:0);
