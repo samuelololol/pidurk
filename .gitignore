@@ -2,4 +2,4 @@
 .lib*
 *.la
 *.lo
-test.dSYM*
+test.out*
