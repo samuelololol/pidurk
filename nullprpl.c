@@ -68,17 +68,20 @@
 #include "version.h"
 
 
-#define NULLPRPL_ID "prpl-null"
+#define NULLPRPL_ID "finchurk"
 static PurplePlugin *_null_protocol = NULL;
 
 #define NULL_STATUS_ONLINE   "online"
 #define NULL_STATUS_AWAY     "away"
 #define NULL_STATUS_OFFLINE  "offline"
 
+
+/* samuel, transmit userdatae between PurpleConnection? */
 typedef void (*GcFunc)(PurpleConnection *from,
                        PurpleConnection *to,
                        gpointer userdata);
 
+/* samuel, an unit of a function data?? */
 typedef struct {
   GcFunc fn;
   PurpleConnection *from;
@@ -109,7 +112,9 @@ static PurpleConnection *get_nullprpl_gc(const char *username) {
     return NULL;
 }
 
-static void call_if_nullprpl(gpointer data, gpointer userdata) {
+static void call_if_nullprpl(gpointer data, 
+                             gpointer userdata) {
+
   PurpleConnection *gc = (PurpleConnection *)(data);
   GcFuncData *gcfdata = (GcFuncData *)userdata;
 
@@ -125,8 +130,11 @@ static void foreach_nullprpl_gc(GcFunc fn, PurpleConnection *from,
 }
 
 
-typedef void(*ChatFunc)(PurpleConvChat *from, PurpleConvChat *to,
-                        int id, const char *room, gpointer userdata);
+typedef void(*ChatFunc)(PurpleConvChat *from, 
+                        PurpleConvChat *to,
+                        int id, 
+                        const char *room, 
+                        gpointer userdata);
 
 typedef struct {
   ChatFunc fn;
