@@ -3,148 +3,182 @@
 #include <string.h>
 #include <oauth.h>
 
-#define ENABLE_POST 0
-#define ENABLE_GET 1
-/*
- * a example requesting and parsing a request-token from an OAuth service-provider
- * excercising the oauth-HTTP GET function. - it is almost the same as
- * \ref request_token_example_post below.
- */
-void request_token_example_get(void) {
-#if ENABLE_GET
-    const char *request_token_uri = "http://oauth-sandbox.mediamatic.nl/module/OAuth/request_token";
-    const char *req_c_key = "17b09ea4c9a4121145936f0d7d8daa28047583796"; //< consumer key
-    const char *req_c_secret = "942295b08ffce77b399419ee96ac65be"; //< consumer secret
-#else
-    const char *request_token_uri = "http://term.ie/oauth/example/request_token.php";
-    const char *req_c_key = "key"; //< consumer key
-    const char *req_c_secret = "secret"; //< consumer secret
-#endif
-    char *res_t_key = NULL; //< replied key
-    char *res_t_secret = NULL; //< replied secret
-    char *req_url = NULL;
-    char *reply;
-    req_url = oauth_sign_url2(request_token_uri, NULL, OA_HMAC, NULL, req_c_key, req_c_secret, NULL, NULL);
-    printf("request URL:%s\n\n", req_url);
-    reply = oauth_http_get(req_url,NULL);
-    if (!reply)
-        printf("HTTP request for an oauth request-token failed.\n");
-    else {
-        // parse reply - example:
-        //"oauth_token=2a71d1c73d2771b00f13ca0acb9836a10477d3c56&oauth_token_secret=a1b5c00c1f3e23fb314a0aa22e990266"
-        int rc;
-        char **rv = NULL;
-        printf("HTTP-reply: %s\n", reply);
-        rc = oauth_split_url_parameters(reply, &rv);
-        qsort(rv, rc, sizeof(char *), oauth_cmpstringp);
-        if( rc==2
-                && !strncmp(rv[0],"oauth_token=",11)
-                && !strncmp(rv[1],"oauth_token_secret=",18) ){
-            res_t_key=strdup(&(rv[0][12]));
-            res_t_secret=strdup(&(rv[1][19]));
-            printf("key: '%s'\nsecret: '%s'\n",res_t_key, res_t_secret);
-        }
-        if(rv) free(rv);
-    }
-    if(req_url) free(req_url);
-    if(reply) free(reply);
-    if(res_t_key) free(res_t_key);
-    if(res_t_secret) free(res_t_secret);
-}
-/*
- * a example requesting and parsing a request-token from an OAuth service-provider
- * using the oauth-HTTP POST function.
- */
-void request_token_example_post(void) {
-#if ENABLE_POST
-    const char *request_token_uri = "http://oauth-sandbox.mediamatic.nl/module/OAuth/request_token";
-    const char *req_c_key = "17b09ea4c9a4121145936f0d7d8daa28047583796"; //< consumer key
-    const char *req_c_secret = "942295b08ffce77b399419ee96ac65be"; //< consumer secret
-#else
-    const char *request_token_uri = "http://term.ie/oauth/example/request_token.php";
-    const char *req_c_key = "key"; //< consumer key
-    const char *req_c_secret = "secret"; //< consumer secret
-#endif
-    char *res_t_key = NULL; //< replied key
-    char *res_t_secret = NULL; //< replied secret
+#define DEBUG 0
+
+typedef struct {
+    const char *uri;
+    const char *c_key;
+    const char *c_secret;
+    const char *t_key;
+    const char *t_secret;
+}plurk_login_info;
+
+
+void request_token_example_post( plurk_login_info *p) {
+    const char *request_token_uri = p->uri;
+    const char *req_c_key = p->c_key;
+    const char *req_c_secret = p->c_secret;
+    const char **res_t_key = &(p->t_key);              
+    const char **res_t_secret = &(p->t_secret);        
+
     char *postarg = NULL;
+    //char *postarg = strncat("oauth_verifier=",a,strlen(a));
+    //char *postarg = malloc(sizeof(char)*(15+strlen(a)+1));
     char *req_url;
     char *reply;
-    req_url = oauth_sign_url2(request_token_uri, &postarg, OA_HMAC, NULL, req_c_key, req_c_secret, NULL, NULL);
+
+    req_url = oauth_sign_url2(request_token_uri, 
+            &postarg, 
+            OA_HMAC, 
+            "POST", 
+            req_c_key, 
+            req_c_secret, 
+            NULL, 
+            NULL);
+    
+
+    //oauth_sign_url2 (const char *url, 
+    //                 char **postarg, 
+    //                 OAuthMethod method, 
+    //                 const char *http_method, 
+    //                 const char *c_key, 
+    //                 const char *c_secret, 
+    //                 const char *t_key, 
+    //                 const char *t_secret)
+
+
     printf("request URL:%s\n\n", req_url);
     reply = oauth_http_post(req_url,postarg);
     if (!reply)
         printf("HTTP request for an oauth request-token failed.\n");
     else {
-        //parse reply - example:
-        //"oauth_token=2a71d1c73d2771b00f13ca0acb9836a10477d3c56&oauth_token_secret=a1b5c00c1f3e23fb314a0aa22e990266"
         int rc;
         char **rv = NULL;
         printf("HTTP-reply: %s\n", reply);
         rc = oauth_split_url_parameters(reply, &rv);
         qsort(rv, rc, sizeof(char *), oauth_cmpstringp);
-        if( rc==2
-                && !strncmp(rv[0],"oauth_token=",11)
-                && !strncmp(rv[1],"oauth_token_secret=",18) ){
-            res_t_key=strdup(&(rv[0][12]));
-            res_t_secret=strdup(&(rv[1][19]));
-            printf("key: '%s'\nsecret: '%s'\n",res_t_key, res_t_secret);
+        if( rc>=3
+                && !strncmp(rv[2],"oauth_token_secret=",18) 
+                && !strncmp(rv[1],"oauth_token=",11)
+          ){
+            *res_t_key=strdup(&(rv[1][12]));
+            *res_t_secret=strdup(&(rv[2][19]));
+#ifdef DEBUG
+            printf("key: '%s'\nsecret: '%s'\n",*res_t_key, *res_t_secret);
+#endif
         }
         if(rv) free(rv);
     }
     if(req_url) free(req_url);
     if(postarg) free(postarg);
     if(reply) free(reply);
-    if(res_t_key) free(res_t_key);
-    if(res_t_secret) free(res_t_secret);
 }
-/*
- * Main Test and Example Code.
- *
- * compile:
- * gcc -lssl -loauth -o oauthtest oauthtest.c
- */
+
+void access_token_example_post(plurk_login_info *p, char a[]) {
+    const char *request_token_uri = p->uri;
+    const char *req_c_key = p->c_key;
+    const char *req_c_secret = p->c_secret;
+    const char **res_t_key = &(p->t_key);              
+    const char **res_t_secret = &(p->t_secret);        
+
+    char *postarg = NULL;
+    //char *postarg = strncat("oauth_verifier=",*a,strlen(*a));
+    char *req_url;
+    char *reply;
+
+    a = strncat(a,"oauth_verifier=", 16 + strlen(a));
+
+    req_url = oauth_sign_url2(request_token_uri, 
+            &postarg, 
+            OA_HMAC, 
+            "POST",
+            req_c_key, 
+            req_c_secret, 
+            NULL, 
+            NULL);
+
+    //oauth_sign_url2 (const char *url, 
+    //                 char **postarg, 
+    //                 OAuthMethod method, 
+    //                 const char *http_method, 
+    //                 const char *c_key, 
+    //                 const char *c_secret, 
+    //                 const char *t_key, 
+    //                 const char *t_secret)
+    //
+    int verifier_len = strlen(a);
+    char *verifier = malloc(sizeof(char)*(16 + verifier_len + 1));
+    memset(verifier,'\0',16 + verifier_len + 1);
+    verifier = strncpy(verifier,"&oauth_verifier=",16);
+    verifier = strncat(verifier, a, 16 + verifier_len + 1);
+    printf("%s \n",verifier);
+
+    int newp_len = (verifier_len + strlen(postarg));
+    char *newp = malloc(sizeof(char) * newp_len + 1);
+    memset(newp,'\0', newp_len + 1);
+    newp = strncpy(newp, postarg , strlen(postarg));
+    newp = strncat(newp, verifier, verifier_len);
+
+    free(verifier);
+    free(postarg);
+    postarg = newp;
+
+
+
+    printf(">> %s\n",postarg);
+    printf("<<\n");
+
+
+
+#ifdef DEBUG
+    printf("request URL:%s\n\n", req_url);
+#endif
+    reply = oauth_http_post(req_url,postarg);
+    if (!reply)
+#ifdef DEBUG
+        printf("HTTP request for an oauth request-token failed.\n");
+#endif
+    else {
+        int rc;
+        char **rv = NULL;
+#ifdef DEBUG
+        printf("HTTP-reply: %s\n", reply);
+#endif
+        rc = oauth_split_url_parameters(reply, &rv);
+        qsort(rv, rc, sizeof(char *), oauth_cmpstringp);
+        if( rc>=3
+                && !strncmp(rv[2],"oauth_token_secret=",18) 
+                && !strncmp(rv[1],"oauth_token=",11)
+          ){
+            *res_t_key=strdup(&(rv[1][12]));
+            *res_t_secret=strdup(&(rv[2][19]));
+#ifdef DEBUG
+            printf("key: '%s'\nsecret: '%s'\n",*res_t_key, *res_t_secret);
+#endif
+        }
+        if(rv) free(rv);
+    }
+    if(req_url) free(req_url);
+    if(postarg) free(postarg);
+    if(reply) free(reply);
+}
 int main (int argc, char **argv) {
-    int fail=0;
-    const char *url = "http://base.url/&just=append?post=or_get_parameters"
-        "&arguments=will_be_formatted_automatically?&dont_care"
-        "=about_separators";
-    //< the url to sign
-    const char *c_key = "1234567890abcdef1234567890abcdef123456789";
-    //< consumer key
-    const char *c_secret = "01230123012301230123012301230123";
-    //< consumer secret
-    const char *t_key = "0987654321fedcba0987654321fedcba098765432";
-    //< token key
-    const char *t_secret = "66666666666666666666666666666666";
-    //< token secret
-#if ENABLE_GET
-// example sign GET request and print the signed request URL
-    {
-        char *geturl = NULL;
-        geturl = oauth_sign_url2(url, NULL, OA_HMAC, NULL, c_key, c_secret, t_key, t_secret);
-        printf("GET: URL:%s\n\n", geturl);
-        if(geturl) free(geturl);
-    }
-#endif
-#if ENABLE_POST // sign POST ;) example
-    {
-        char *postargs = NULL, *post = NULL;
-        post = oauth_sign_url2(url, &postargs, OA_HMAC, NULL, c_key, c_secret, t_key, t_secret);
-        printf("POST: URL:%s\n PARAM:%s\n\n", post, postargs);
-        if(post) free(post);
-        if(postargs) free(postargs);
-    }
-#endif
+    plurk_login_info p;
+    p.uri = "http://www.plurk.com/OAuth/request_token";
+    p.c_key = "CqjHQlKFxo4c";
+    p.c_secret = "96OcDCQqXpjbNsgEpAgeO5EptBGRr89g";
+
     printf(" *** sending HTTP request *** \n\n");
-    // These two will perform a HTTP request, requesting an access token.
-    // it's intended both as test (verify signature)
-    // and example code.
-#if ENABLE_POST // POST a request-token request
-    request_token_example_post();
+    request_token_example_post(&p);
+#ifdef DEBUG
+    printf("t_key: %s\tt_secret: %s\n",p.t_key,p.t_secret);
 #endif
-#if ENABLE_GET // GET a request-token
-    request_token_example_get();
-#endif
-    return (fail?1:0);
+    printf("Authorize the access to your Plurk account: \n");
+    printf("http://www.plurk.com/OAuth/authorize?oauth_token=%s\n",p.t_key);
+    char authnum[128]={};
+    scanf("%s",authnum);
+    printf("enter the Authorize number:");
+    access_token_example_post(&p,authnum);
+    return 0;
 }
+//vim:fdm=marker
