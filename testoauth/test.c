@@ -3,10 +3,12 @@
 #include <string.h>
 #include <oauth.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 typedef struct {
     const char *uri;
+    const char *access;
+    const char *request;
     const char *c_key;
     const char *c_secret;
     const char *t_key;
@@ -15,7 +17,11 @@ typedef struct {
 
 
 void request_token_example_post( plurk_login_info *p) {
-    const char *request_token_uri = p->uri;
+    int uri_len = strlen(p->uri) + strlen(p->request);
+    char *request_token_uri = malloc(sizeof(char)*(uri_len+1));
+    memset(request_token_uri,0,uri_len + 1);
+    request_token_uri = strncpy(request_token_uri,p->uri,strlen(p->uri));
+    request_token_uri = strncat(request_token_uri,p->request,strlen(p->request));
     const char *req_c_key = p->c_key;
     const char *req_c_secret = p->c_secret;
     const char **res_t_key = &(p->t_key);              
@@ -75,7 +81,11 @@ void request_token_example_post( plurk_login_info *p) {
 }
 
 void access_token_example_post(plurk_login_info *p, char a[]) {
-    const char *request_token_uri = p->uri;
+    int uri_len = strlen(p->uri) + strlen(p->access);
+    char *request_token_uri = malloc(sizeof(char)*(uri_len+1));
+    memset(request_token_uri,0,uri_len + 1);
+    request_token_uri = strncpy(request_token_uri,p->uri,strlen(p->uri));
+    request_token_uri = strncat(request_token_uri,p->access,strlen(p->access));
     const char *req_c_key = p->c_key;
     const char *req_c_secret = p->c_secret;
     const char **res_t_key = &(p->t_key);              
@@ -85,8 +95,6 @@ void access_token_example_post(plurk_login_info *p, char a[]) {
     //char *postarg = strncat("oauth_verifier=",*a,strlen(*a));
     char *req_url;
     char *reply;
-
-    a = strncat(a,"oauth_verifier=", 16 + strlen(a));
 
     req_url = oauth_sign_url2(request_token_uri, 
             &postarg, 
@@ -106,29 +114,25 @@ void access_token_example_post(plurk_login_info *p, char a[]) {
     //                 const char *t_key, 
     //                 const char *t_secret)
     //
+    
     int verifier_len = strlen(a);
     char *verifier = malloc(sizeof(char)*(16 + verifier_len + 1));
     memset(verifier,'\0',16 + verifier_len + 1);
     verifier = strncpy(verifier,"&oauth_verifier=",16);
-    verifier = strncat(verifier, a, 16 + verifier_len + 1);
-    printf("%s \n",verifier);
+    verifier = strncat(verifier, a, verifier_len);
 
-    int newp_len = (verifier_len + strlen(postarg));
+    int newp_len = (16 + verifier_len + strlen(postarg));
     char *newp = malloc(sizeof(char) * newp_len + 1);
     memset(newp,'\0', newp_len + 1);
     newp = strncpy(newp, postarg , strlen(postarg));
-    newp = strncat(newp, verifier, verifier_len);
+    newp = strncat(newp, verifier, 16 + verifier_len + 1);
 
     free(verifier);
     free(postarg);
     postarg = newp;
 
-
-
     printf(">> %s\n",postarg);
     printf("<<\n");
-
-
 
 #ifdef DEBUG
     printf("request URL:%s\n\n", req_url);
@@ -164,7 +168,9 @@ void access_token_example_post(plurk_login_info *p, char a[]) {
 }
 int main (int argc, char **argv) {
     plurk_login_info p;
-    p.uri = "http://www.plurk.com/OAuth/request_token";
+    p.uri = "http://www.plurk.com/OAuth/";
+    p.request = "request_token";
+    p.access = "access_token";
     p.c_key = "CqjHQlKFxo4c";
     p.c_secret = "96OcDCQqXpjbNsgEpAgeO5EptBGRr89g";
 
@@ -173,8 +179,8 @@ int main (int argc, char **argv) {
 #ifdef DEBUG
     printf("t_key: %s\tt_secret: %s\n",p.t_key,p.t_secret);
 #endif
-    printf("Authorize the access to your Plurk account: \n");
     printf("http://www.plurk.com/OAuth/authorize?oauth_token=%s\n",p.t_key);
+    printf("Authorize the access to your Plurk account: \n");
     char authnum[128]={};
     scanf("%s",authnum);
     printf("enter the Authorize number:");
