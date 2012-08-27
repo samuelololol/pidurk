@@ -3,3 +3,7 @@
 *.la
 *.lo
 test.out*
+tags
+tag
+*.out
+*.files
