@@ -152,7 +152,9 @@ void access_token_example_get(plurk_login_info *p, char a[]) {
     printf("request header=%s\n\n", http_hdr);
 #endif
 
+    // POST HTTPMethod
     //reply = oauth_http_post2(req_url,postarg,http_hdr);
+    // GET HTTPMethod
     reply = oauth_http_get2(req_url,postarg,http_hdr);
 
     if(!reply)
@@ -166,14 +168,15 @@ void access_token_example_get(plurk_login_info *p, char a[]) {
         qsort(rv, rc, sizeof(char *), oauth_cmpstringp);
         printf("samuel, access_token rv: %s\n", *rv);
 
-        //if( rc==2 
-        //        && !strncmp(rv[0],"oauth_token=",11)
-        //        && !strncmp(rv[1],"oauth_token_secret=",18) ){
-        //    res_t_key=strdup(&(rv[0][12]));
-        //    res_t_secret=strdup(&(rv[1][19]));
-        //    printf("key:    '%s'\nsecret: '%s'\n",res_t_key, res_t_secret);
+        if( rc==2 
+                && !strncmp(rv[0],"oauth_token=",11)
+                && !strncmp(rv[1],"oauth_token_secret=",18) ){
+            *res_t_key=strdup(&(rv[0][12]));
+            *res_t_secret=strdup(&(rv[1][19]));
+            printf("get key!!!!!!\n");
+            printf("key:    '%s'\nsecret: '%s'\n",*res_t_key, *res_t_secret);
 
-        //}
+        }
         if(rv) free(rv);
     }
 
@@ -190,9 +193,9 @@ int main (int argc, char **argv) {
     plurk_login_info p;
     char authnum[8]={};
 
-    p.uri = "http://www.plurk.com/OAuth/";
-    p.request = "request_token";
-    p.access = "access_token";
+    p.uri = "http://www.plurk.com/";
+    p.request = "OAuth/request_token";
+    p.access = "OAuth/access_token";
 
     p.c_key = strndup(argv[1],strlen(argv[1]));
     p.c_secret = strndup(argv[2],strlen(argv[2]));
@@ -212,6 +215,31 @@ int main (int argc, char **argv) {
     printf("Authorize the access to your Plurk account: \n");
     scanf("%s",authnum);
     access_token_example_get(&p,authnum);
+#if SAMUEL_DEBUG 
+    printf("final main\n");
+    printf("t_key: %s\tt_secret: %s\n",p.t_key,p.t_secret);
+#endif
+
+
+
+    const char *emg="APP/Emoticons/get";
+    char *api = s_concate(&(p.uri),&emg);
+    char *req_url;
+    char *postarg;
+    char *reply;
+    req_url = oauth_sign_url2(
+              api,                // url
+              &postarg,           // postarg
+              OA_HMAC,            // OAuthMethod
+              "GET",             // HTTPMethod
+              p.c_key,          // customer key
+              p.c_secret,       // customer secret
+              p.t_key,               // token key
+              p.t_secret);              // token secret
+    printf("samuel, %s\n",req_url);
+    reply = oauth_http_get(req_url,postarg);
+    printf("%s\n",reply);
+
     return 0;
 }
 //vim:fdm=marker
