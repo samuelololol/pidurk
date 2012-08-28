@@ -36,7 +36,7 @@ void request_token_example_post( plurk_login_info *p) {
     req_url = oauth_sign_url2(request_token_uri, 
             &postarg, 
             OA_HMAC, 
-            "POST", 
+            "GET", 
             req_c_key, 
             req_c_secret, 
             NULL, 
@@ -56,7 +56,7 @@ void request_token_example_post( plurk_login_info *p) {
 
 
     printf("request URL:%s\n\n", req_url);
-    reply = oauth_http_post(req_url,postarg);
+    reply = oauth_http_get(req_url,postarg);
     if (!reply)
         printf("HTTP request for an oauth request-token failed.\n");
     else {
@@ -92,25 +92,27 @@ void access_token_example_post(plurk_login_info *p, char a[]) {
     const char *req_c_secret = p->c_secret;
     const char *res_t_key = p->t_key;              
     const char *res_t_secret = p->t_secret;        
+    //const char **res_t_key = &(p->t_key);              
+    //const char **res_t_secret = &(p->t_secret);        
 
     char *postarg = NULL;
     char *req_url;
     char *reply;
 
-    int otoken_len = strlen(p->t_key);
-    int otokens_len = strlen(p->t_secret);
-    int verifier_len = strlen(a);
 
+    int otoken_len = strlen(p->t_key);
     char *otoken = malloc(sizeof(char)*(12 + otoken_len +1));
     memset(otoken, 0, 12 + otoken_len + 1);
     otoken = memcpy(otoken, "oauth_token=", 12);
     otoken = strncat(otoken, p->t_key, otoken_len);
 
+    int otokens_len = strlen(p->t_secret);
     char *otokens = malloc(sizeof(char)*(19 + otokens_len +1));
     memset(otokens, 0, 19 + otokens_len + 1);
     otokens = memcpy(otokens, "oauth_token_secret=", 19);
     otokens = strncat(otokens, p->t_secret, otokens_len);
 
+    int verifier_len = strlen(a);
     char *verifier = malloc(sizeof(char)*(15 + verifier_len + 1));
     memset(verifier, 0, 15 + verifier_len + 1);
     verifier = memcpy(verifier, "oauth_verifier=", 15);
@@ -129,7 +131,7 @@ void access_token_example_post(plurk_login_info *p, char a[]) {
     // oauth_sign_url2 in steps
     // example edited from: 
     // http://liboauth.sourceforge.net/tests_2oauthtest2_8c-example.html#a0
-    int argc;
+    int argc=0;
     char **argv=NULL;
     char *req_hdr = NULL;
     char *http_hdr= NULL;
@@ -138,18 +140,18 @@ void access_token_example_post(plurk_login_info *p, char a[]) {
     if (1) {
         int i;
         for (i=0;i<argc; i++)
-            printf("%d:%s\n", i, argv[i]);
+            printf("samuel, before add:\n%d:%s\n", i, argv[i]);
     }
 
     // the most important step here!!
-    oauth_add_param_to_array(&argc, &argv, otoken);
-    oauth_add_param_to_array(&argc, &argv, otokens);
+    //oauth_add_param_to_array(&argc, &argv, otoken);
+    //oauth_add_param_to_array(&argc, &argv, otokens);
     oauth_add_param_to_array(&argc, &argv, verifier);
 
     if (1) {
         int i;
         for (i=0;i<argc; i++)
-            printf("%d:%s\n", i, argv[i]);
+            printf("samuel, after add:\n%d:%s\n", i, argv[i]);
     }
 
 
@@ -157,22 +159,22 @@ void access_token_example_post(plurk_login_info *p, char a[]) {
             NULL, //< postargs (unused)
             OA_HMAC,
             "GET", //< HTTP method (defaults to "GET")
-            req_c_key, req_c_secret, NULL, NULL);
+            req_c_key, req_c_secret,//NULL, NULL);
+            res_t_key, res_t_secret);
+
+    //req_url = oauth_serialize_url(argc,0,argv);
 
     req_hdr = oauth_serialize_url_sep(argc, 1, argv, ", ", 6);
     req_url = oauth_serialize_url_sep(argc, 0, argv, "&", 1);
     oauth_free_array(&argc, &argv);
     printf("samuel, req_hdr: %s\n",req_hdr);
-    memset(req_url+strlen(req_url)-1,'\0',1);
     printf("samuel, req_url: %s\n",req_url);
 
 
 
     http_hdr = malloc(strlen(req_hdr) + 100);
     memset(http_hdr,0,100);
-    sprintf(http_hdr, "Authorization: OAuth realm=\"http://www.plurk.com\", %s", req_hdr);
-    //sprintf(http_hdr, "Authorization: OAuth , %s", req_hdr);
-    //sprintf(http_hdr, "Authorization: OAuth realm=\"http://www.plurk.com/OAuth/access_token\", %s", req_hdr);
+    sprintf(http_hdr, "Authorization: OAuth realm=\"\", %s", req_hdr);
     printf("request URL=%s\n", req_url);
     printf("request header=%s\n\n", http_hdr);
 
@@ -185,11 +187,11 @@ void access_token_example_post(plurk_login_info *p, char a[]) {
     else {
         int rc;
         char **rv=NULL;
-        printf("samuel, HTTP-reply: %s\n", reply);
+        printf("samuel, access_token HTTP-reply: %s\n", reply);
         rc = oauth_split_url_parameters(reply, &rv);
-        printf("samuel, rc: %d\n",rc);
+        printf("samuel, access_toekn rc: %d\n",rc);
         qsort(rv, rc, sizeof(char *), oauth_cmpstringp);
-        printf("samuel, rv: %s\n", *rv);
+        printf("samuel, access_token rv: %s\n", *rv);
 
         //if( rc==2 
         //        && !strncmp(rv[0],"oauth_token=",11)
